@@ -1,18 +1,18 @@
-from llm_provider import LLM_PROVIDER, OLLAMA_MODEL, OPENAI_MODEL
 import os
 import time
 from collections import defaultdict, deque
 from threading import Lock
 
 from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from llm_provider import LLM_PROVIDER, OLLAMA_MODEL, OPENAI_MODEL
 from cipher_agent import answer_question
-
-
-load_dotenv()
 
 app = FastAPI(
     title="CIPHER AI Gateway",
@@ -20,25 +20,21 @@ app = FastAPI(
     description="Natural-language gateway to the CIPHER Web API using Ollama.",
 )
 
-origins_env = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:8000,http://127.0.0.1:8000"
-)
-
 origins = [
-    x.strip()
-    for x in origins_env.split(",")
-    if x.strip()
+    "https://bos-mav.github.io",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
+
+print("CORS origins:", origins)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 
 RATE_LIMIT_PER_HOUR = int(
     os.getenv("RATE_LIMIT_PER_HOUR", "30")
