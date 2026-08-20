@@ -1,0 +1,638 @@
+from llm_provider import ask_llm
+import json
+import os
+import requests
+import re
+from typing import Any
+
+from cipher_client import CipherClient
+
+def extract_phenotype_id(question: str) -> str | None:
+    # Match a 32-character hex UQID
+    match = re.search(r"\b[a-fA-F0-9]{32}\b", question)
+    if match:
+        return match.group(0)
+
+    # Or a numeric phenotype ID
+    match = re.search(r"\b\d+\b", question)
+    if match:
+        return match.group(0)
+
+    return None
+
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL",
+    "http://localhost:11434/api/generate"
+)
+
+OLLAMA_MODEL = os.getenv(
+    "OLLAMA_MODEL",
+    "llama3.2"
+)
+
+cipher = CipherClient()
+
+
+# ---------------------------------------------------------
+# JSON schema used to force Ollama to return a valid action
+# ---------------------------------------------------------
+
+ACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "enum": [
+                "search_phenotypes",
+                "get_phenotype",
+                "search_variables",
+                "search_dictionaries",
+                "compare_phenotypes",
+                "get_field_values"
+            ]
+        },
+
+        "query": {
+            "type": ["string", "null"]
+        },
+
+        "id": {
+            "type": ["string", "null"]
+        },
+
+        "base_id": {
+            "type": ["integer", "null"]
+        },
+
+        "compare_ids": {
+            "type": ["array", "null"],
+            "items": {
+                "type": "integer"
+            }
+        },
+
+        "enum_type": {
+            "type": ["string", "null"]
+        },
+
+        "is_validated": {
+            "type": ["boolean", "null"]
+        },
+
+        "has_algorithm_code": {
+            "type": ["boolean", "null"]
+        },
+
+        "has_publication": {
+            "type": ["boolean", "null"]
+        },
+
+        "has_attachment": {
+            "type": ["boolean", "null"]
+        },
+
+        "limit": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "maximum": 50
+        }
+    },
+
+    "required": [
+        "action"
+    ],
+
+    "additionalProperties": False
+}
+
+
+# ---------------------------------------------------------
+# Basic Ollama call
+# ---------------------------------------------------------
+
+def ask_ollama(
+    prompt: str,
+    json_schema: dict | None = None
+) -> str:
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False
+    }
+
+    if json_schema is not None:
+        payload["format"] = json_schema
+
+    response = requests.post(
+        OLLAMA_URL,
+        json=payload,
+        timeout=180
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    return data["response"]
+
+
+# ---------------------------------------------------------
+# Decide what CIPHER operation should be performed
+# ---------------------------------------------------------
+
+def clean_search_query(question: str) -> str:
+    query = question.strip()
+
+    prefixes = [
+        "find phenotypes related to ",
+        "find phenotypes for ",
+        "find phenotypes about ",
+        "find phenotypes ",
+        "search phenotypes for ",
+        "search for phenotypes related to ",
+        "search for ",
+        "find variables related to ",
+        "find variables for ",
+        "find variables ",
+        "search variables for ",
+        "find data dictionaries related to ",
+        "find data dictionaries for ",
+        "find data dictionaries ",
+        "find dictionaries related to ",
+        "find dictionaries for ",
+        "find dictionaries "
+    ]
+
+    lower = query.lower()
+
+    for prefix in prefixes:
+        if lower.startswith(prefix):
+            query = query[len(prefix):]
+            break
+
+    return query.strip(" ?.")
+
+def choose_action(question: str) -> dict[str, Any]:
+
+    prompt = f"""
+You are a routing assistant for the CIPHER phenotype API.
+
+Determine which CIPHER API operation should answer the user's question.
+
+Available actions:
+
+1. search_phenotypes
+Use this when the user wants to find phenotypes.
+
+Examples:
+- Find diabetes phenotypes
+- Search for hypertension phenotypes
+- Find validated diabetes phenotypes
+- Find phenotypes that have publications
+- Find phenotypes containing algorithm code
+
+
+2. get_phenotype
+Use this when the user supplies a specific phenotype ID or UQID
+and wants information about that phenotype.
+
+Examples:
+- Get phenotype 123
+- Show phenotype 342b1df9530342f0b59311a9fa97a2d4
+
+
+3. search_variables
+Use this when the user wants to find data dictionary variables.
+
+Examples:
+- Find variables for HbA1c
+- Search for systolic blood pressure variables
+
+
+4. search_dictionaries
+Use this when the user wants to find data dictionaries.
+
+Examples:
+- Find diabetes data dictionaries
+- What dictionaries relate to cardiology?
+
+
+5. compare_phenotypes
+Use this when the user explicitly wants to compare phenotype IDs.
+
+Example:
+- Compare phenotype 123 with 456
+- Compare phenotype 123 with 456 and 789
+
+For this action:
+base_id = first phenotype
+compare_ids = all phenotypes being compared against it
+
+
+6. get_field_values
+Use this when the user asks what values or categories CIPHER
+supports for a particular enumeration.
+
+Common enum_type values include:
+
+Phenotype_Status
+Phenotype_DataClassification
+Phenotype_RelatedDiseaseDomain
+Algorithm_MethodUsed
+Algorithm_PerformanceMeasures
+Phenotype_DataSource
+Phenotype_AnalysisRole
+Phenotype_Lab_Specimen
+Algorithm_Associated_Codes
+Phenotype_Relation
+Phenotype_Review_Status
+Phenotype_Category
+Algorithm_Context_Development
+Phenotype_Attachment
+Algorithm_Lab_Associated_Codes
+Algorithm_Medication_Associated_Codes
+Algorithm_Text_Associated_Codes
+Algorithm_Programming_Language
+Keyword_Source
+Algorithm_Code_Lookup
+Algorithm_Level_Adjudication
+
+
+FILTER RULES
+
+If the user says:
+validated
+set:
+"is_validated": true
+
+If the user says:
+not validated
+set:
+"is_validated": false
+
+If the user asks for phenotypes with algorithm/code:
+"has_algorithm_code": true
+
+If the user asks for phenotypes with publications:
+"has_publication": true
+
+If the user asks for phenotypes with attachments:
+"has_attachment": true
+
+If no limit is specified, use 10.
+
+Do not invent IDs.
+
+IMPORTANT:
+
+For search_phenotypes, search_variables, and search_dictionaries,
+you MUST provide a query value.
+
+The query should contain the main medical, clinical, or data concept
+being searched.
+
+Examples:
+
+"Find diabetes phenotypes"
+query = "diabetes"
+
+"Find validated hypertension phenotypes"
+query = "hypertension"
+
+"Find variables related to HbA1c"
+query = "HbA1c"
+
+"Find data dictionaries related to cardiology"
+query = "cardiology"
+
+Do not invent CIPHER data.
+
+Return only the structured response required by the JSON schema.
+
+User question:
+
+{question}
+"""
+
+    raw = ask_llm(
+       prompt,
+       json_schema=ACTION_SCHEMA
+    ).strip()
+
+    print("\nOLLAMA ROUTER RESPONSE:")
+    print(raw)
+
+    action = json.loads(raw)
+
+    if action.get("action") in {
+       "search_phenotypes",
+       "search_variables",
+       "search_dictionaries"
+    }:
+       if not action.get("query"):
+          action["query"] = clean_search_query(question)
+
+    if action.get("action") == "get_phenotype":
+       if not action.get("id"):
+          action["id"] = extract_phenotype_id(question)
+
+    validate_action(action)
+  
+    return action
+
+
+# ---------------------------------------------------------
+# Additional Python validation
+# ---------------------------------------------------------
+
+def validate_action(action: dict[str, Any]) -> None:
+
+    name = action.get("action")
+
+    if name == "search_phenotypes":
+
+        if not action.get("query"):
+            raise ValueError(
+                "search_phenotypes requires query"
+            )
+
+    elif name == "get_phenotype":
+
+        if not action.get("id"):
+            raise ValueError(
+                "get_phenotype requires id"
+            )
+
+    elif name == "search_variables":
+
+        if not action.get("query"):
+            raise ValueError(
+                "search_variables requires query"
+            )
+
+    elif name == "search_dictionaries":
+
+        if not action.get("query"):
+            raise ValueError(
+                "search_dictionaries requires query"
+            )
+
+    elif name == "compare_phenotypes":
+
+        if action.get("base_id") is None:
+            raise ValueError(
+                "compare_phenotypes requires base_id"
+            )
+
+        if not action.get("compare_ids"):
+            raise ValueError(
+                "compare_phenotypes requires compare_ids"
+            )
+
+    elif name == "get_field_values":
+
+        if not action.get("enum_type"):
+            raise ValueError(
+                "get_field_values requires enum_type"
+            )
+
+    else:
+        raise ValueError(
+            f"Unsupported action: {name}"
+        )
+
+
+# ---------------------------------------------------------
+# Execute the selected CIPHER API operation
+# ---------------------------------------------------------
+
+def execute_action(action: dict[str, Any]) -> Any:
+
+    name = action["action"]
+
+    limit = action.get("limit") or 10
+
+
+    # ---------------------------
+    # Phenotype search
+    # ---------------------------
+
+    if name == "search_phenotypes":
+
+        return cipher.search_phenotypes(
+            query=action["query"],
+            limit=limit,
+            is_validated=action.get(
+                "is_validated"
+            ),
+            has_algorithm_code=action.get(
+                "has_algorithm_code"
+            ),
+            has_publication=action.get(
+                "has_publication"
+            ),
+            has_attachment=action.get(
+                "has_attachment"
+            )
+        )
+
+
+    # ---------------------------
+    # Specific phenotype
+    # ---------------------------
+
+    if name == "get_phenotype":
+
+        return cipher.get_phenotype(
+            action["id"]
+        )
+
+
+    # ---------------------------
+    # Variable search
+    # ---------------------------
+
+    if name == "search_variables":
+
+        return cipher.search_variables(
+            query=action["query"],
+            limit=limit
+        )
+
+
+    # ---------------------------
+    # Dictionary search
+    # ---------------------------
+
+    if name == "search_dictionaries":
+
+        return cipher.search_dictionaries(
+            query=action["query"],
+            limit=limit
+        )
+
+
+    # ---------------------------
+    # Phenotype comparison
+    # ---------------------------
+
+    if name == "compare_phenotypes":
+
+        return cipher.compare_phenotypes(
+            base_id=action["base_id"],
+            compare_ids=action["compare_ids"]
+        )
+
+
+    # ---------------------------
+    # Enumerations
+    # ---------------------------
+
+    if name == "get_field_values":
+
+        return cipher.get_field_values(
+            action["enum_type"]
+        )
+
+
+    raise ValueError(
+        f"Unsupported action: {name}"
+    )
+
+
+# ---------------------------------------------------------
+# Trim CIPHER results for the small local model
+# ---------------------------------------------------------
+
+def prepare_cipher_data(
+    cipher_data: Any,
+    max_chars: int = 24000
+) -> str:
+
+    data_text = json.dumps(
+        cipher_data,
+        indent=2,
+        default=str
+    )
+
+    if len(data_text) <= max_chars:
+        return data_text
+
+    return (
+        data_text[:max_chars]
+        + "\n\n[Additional CIPHER data omitted "
+          "because of local model context limits.]"
+    )
+
+
+# ---------------------------------------------------------
+# Ask Ollama to explain the actual CIPHER results
+# ---------------------------------------------------------
+
+def summarize(
+    question: str,
+    action: dict[str, Any],
+    cipher_data: Any
+) -> str:
+
+    data_text = prepare_cipher_data(
+        cipher_data
+    )
+
+    prompt = f"""
+You are an assistant for the CIPHER phenotype library.
+
+You have received factual data directly from the CIPHER API.
+
+Answer the user's question using ONLY the CIPHER API data
+provided below.
+
+RULES:
+
+1. Never invent phenotype information.
+
+2. Never invent IDs or UQIDs.
+
+3. Never invent validation status.
+
+4. Never invent algorithm descriptions.
+
+5. Never invent authors, publications, variables, dictionaries,
+   data sources, codes, or classifications.
+
+6. If CIPHER returned no results, clearly say that no matching
+   results were returned.
+
+7. If the returned data does not contain enough information to
+   answer part of the question, say that the information was
+   not present in the returned CIPHER data.
+
+8. Include phenotype names when available.
+
+9. Include IDs or UQIDs when useful.
+
+10. When several results are returned, organize them so they
+    are easy to read.
+
+11. Do not say that something is validated unless the returned
+    data explicitly says it is validated.
+
+12. Do not provide medical advice. Explain phenotype information
+    as research/database information.
+
+The user asked:
+
+{question}
+
+
+CIPHER operation:
+
+{json.dumps(action, indent=2)}
+
+
+CIPHER API response:
+
+{data_text}
+
+
+Provide a clear answer to the user's question.
+"""
+
+    return ask_llm(prompt).strip()
+
+
+# ---------------------------------------------------------
+# Public function used by FastAPI
+# ---------------------------------------------------------
+
+def answer_question(
+    question: str
+) -> dict[str, Any]:
+
+    action = choose_action(
+        question
+    )
+
+    print("\nCIPHER ACTION:")
+    print(
+        json.dumps(
+            action,
+            indent=2
+        )
+    )
+
+    cipher_data = execute_action(
+        action
+    )
+
+    answer = summarize(
+        question,
+        action,
+        cipher_data
+    )
+
+    return {
+        "answer": answer,
+        "action": action
+    }

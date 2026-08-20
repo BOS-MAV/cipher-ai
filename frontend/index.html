@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Natural-language search of CIPHER phenotypes and data dictionaries." />
+  <title>CIPHER AI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="eyebrow">CIPHER phenotype library</div>
+      <h1>Ask CIPHER</h1>
+      <p class="lede">Search phenotypes, algorithms, variables, and data dictionaries in natural language.</p>
+    </header>
+
+    <section class="card">
+      <label for="question">Question</label>
+      <textarea id="question" rows="5" placeholder="Example: Find validated hypertension phenotypes that use diagnosis codes."></textarea>
+      <div class="actions">
+        <button id="askButton">Ask CIPHER</button>
+        <span id="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="card answer-card" id="answerCard" hidden>
+      <h2>Answer</h2>
+      <div id="answer"></div>
+      <details id="toolDetails">
+        <summary>Queries used</summary>
+        <pre id="tools"></pre>
+      </details>
+    </section>
+
+    <footer>
+      <p>CIPHER AI retrieves and explains CIPHER records. It is not a clinical decision tool.</p>
+    </footer>
+  </main>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
