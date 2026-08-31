@@ -45,6 +45,84 @@
   </main>
   <script src="config.js"></script>
   <script src="app.js?v=5"></script>
+  <script>
+    // Kept inline so GitHub Pages cannot serve an older response formatter.
+    (() => {
+      const answer = document.getElementById("answer");
+      const copyButton = document.getElementById("copyButton");
+      let plainAnswer = "";
+
+      const clean = (text) => text.replace(/\*\*/g, "").replace(/[“”]/g, '"').trim();
+
+      function formatCipherAnswer() {
+        if (!answer.textContent.includes("**")) return;
+
+        plainAnswer = answer.innerText;
+        const lines = plainAnswer.split("\n").map(line => line.trim()).filter(Boolean);
+        const fragment = document.createDocumentFragment();
+        let cardBody = null;
+
+        for (const line of lines) {
+          const record = line.match(/^\d+[.)]\s+\*\*(.+?)\*\*$/);
+          const field = line.match(/^[-*•]\s+\*\*([^*]+):\*\*\s*(.*)$/);
+
+          if (record) {
+            const card = document.createElement("article");
+            card.className = "phenotype-card";
+
+            const header = document.createElement("div");
+            header.className = "phenotype-card__header";
+
+            const icon = document.createElement("span");
+            icon.className = "record-icon";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = "C";
+
+            const title = document.createElement("h3");
+            title.textContent = clean(record[1]);
+            header.append(icon, title);
+
+            cardBody = document.createElement("div");
+            cardBody.className = "phenotype-card__body";
+            card.append(header, cardBody);
+            fragment.append(card);
+          } else if (field && cardBody) {
+            const row = document.createElement("div");
+            row.className = "result-field";
+
+            const label = document.createElement("span");
+            label.className = "field-label";
+            label.textContent = clean(field[1]);
+
+            const value = document.createElement("span");
+            value.className = "field-value";
+            value.textContent = clean(field[2]);
+            row.append(label, value);
+            cardBody.append(row);
+          } else {
+            cardBody = null;
+            const paragraph = document.createElement("p");
+            paragraph.textContent = clean(line);
+            fragment.append(paragraph);
+          }
+        }
+
+        answer.replaceChildren(fragment);
+        copyButton.hidden = false;
+      }
+
+      new MutationObserver(formatCipherAnswer).observe(answer, {
+        childList: true,
+        subtree: true
+      });
+
+      copyButton.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(plainAnswer);
+        copyButton.textContent = "Copied!";
+        setTimeout(() => { copyButton.textContent = "Copy answer"; }, 1600);
+      });
+    })();
+  </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "72375709b6234bf49af35603878289f1"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
