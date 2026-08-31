@@ -28,7 +28,13 @@ button:disabled { opacity: .5; cursor: wait; }
 .answer-content ul, .answer-content ol { margin: 6px 0 18px; padding-left: 1.35rem; }
 .answer-content li { padding-left: .25rem; margin: 6px 0; }
 .answer-content code { font: .9em ui-monospace, SFMono-Regular, Consolas, monospace; color: #075f72; background: #edf7f9; border-radius: 5px; padding: 2px 5px; overflow-wrap: anywhere; }
+.phenotype-card { margin: 22px 0; border: 1px solid #d8e7eb; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 6px 18px rgba(20,72,84,.06); }
+.phenotype-card__header { display: flex; align-items: center; gap: 12px; padding: 15px 18px; color: #fff; background: linear-gradient(115deg, #075f72, #0b879f); }
+.phenotype-card__header h3 { color: #fff; font-size: 1.14rem; margin: 0; }
+.record-icon { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; font-weight: 850; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); }
+.phenotype-card__body { padding: 4px 18px 8px; }
 .result-field { display: grid; grid-template-columns: minmax(150px, 28%) 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid #e7eef1; }
+.result-field:last-child { border-bottom: 0; }
 .field-label { font-weight: 750; color: #38515d; }
 .field-value { min-width: 0; overflow-wrap: anywhere; }
 details { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
