@@ -24,18 +24,12 @@
       </div>
     </section>
 
-    <section class="card answer-card" id="answerCard" hidden aria-live="polite">
-      <div class="answer-heading">
-        <div>
-          <div class="result-label" id="resultLabel">CIPHER result</div>
-          <h2 id="answerTitle">Answer</h2>
-        </div>
-        <button class="copy-button" id="copyButton" type="button" hidden>Copy answer</button>
-      </div>
-      <div id="answer" class="answer-content"></div>
+    <section class="card answer-card" id="answerCard" hidden>
+      <h2>Answer</h2>
+      <div id="answer"></div>
       <details id="toolDetails">
         <summary>Queries used</summary>
-        <div id="tools" class="tool-list"></div>
+        <pre id="tools"></pre>
       </details>
     </section>
 
@@ -43,8 +37,15 @@
       <p>CIPHER AI retrieves and explains CIPHER records. It is not a clinical decision tool.</p>
     </footer>
   </main>
-  <script src="config.js"></script>
-  <script src="app.js?v=4"></script>
+
+
+  <script>
+    window.CIPHER_AI_API_BASE = "https://cipher-ai-8oq7.onrender.com";
+  </script>
+
+  <script src="app.js?v=3"></script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "72375709b6234bf49af35603878289f1"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
 </body>
 </html>
