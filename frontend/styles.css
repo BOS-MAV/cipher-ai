@@ -37,6 +37,8 @@ button:disabled { opacity: .5; cursor: wait; }
 .result-field:last-child { border-bottom: 0; }
 .field-label { font-weight: 750; color: #38515d; }
 .field-value { min-width: 0; overflow-wrap: anywhere; }
+.result-note { margin: 0; padding: 10px 0 10px 20px; border-bottom: 1px solid #e7eef1; position: relative; }
+.result-note::before { content: "•"; position: absolute; left: 3px; color: #0b819a; font-weight: 800; }
 details { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
 summary { cursor: pointer; font-weight: 650; }
 .tool-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
