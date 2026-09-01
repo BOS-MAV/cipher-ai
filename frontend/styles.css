@@ -39,6 +39,11 @@ button:disabled { opacity: .5; cursor: wait; }
 .field-value { min-width: 0; overflow-wrap: anywhere; }
 .result-note { margin: 0; padding: 10px 0 10px 20px; border-bottom: 1px solid #e7eef1; position: relative; }
 .result-note::before { content: "•"; position: absolute; left: 3px; color: #0b819a; font-weight: 800; }
+.results-summary { font-weight: 700; color: #38515d; background: #edf7f9; border-radius: 10px; padding: 12px 14px; }
+.complete-record { margin: 8px 0 4px; border-top: 1px solid #e7eef1; padding: 12px 0 4px; }
+.complete-record pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; background: #f6f9fa; padding: 12px; border-radius: 8px; }
+.ai-explanation { margin-top: 24px; background: #f8fafb; border: 1px solid #dce6eb; border-radius: 12px; padding: 14px; }
+.ai-explanation__body { margin-top: 14px; }
 details { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
 summary { cursor: pointer; font-weight: 650; }
 .tool-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

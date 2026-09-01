@@ -7,6 +7,120 @@ from typing import Any
 
 from cipher_client import CipherClient
 
+
+def _key_token(value: str) -> str:
+    """Normalize API field names so casing and separators do not matter."""
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def _field(record: dict[str, Any], *aliases: str) -> Any:
+    wanted = {_key_token(alias) for alias in aliases}
+    for key, value in record.items():
+        if _key_token(str(key)) in wanted:
+            return value
+    return None
+
+
+def _record_score(record: dict[str, Any]) -> int:
+    identity_fields = (
+        "id", "phenotype_id", "phenotypeid", "uqid",
+        "phenotype_full_name", "phenotypefullname", "name"
+    )
+    return sum(_field(record, field) is not None for field in identity_fields)
+
+
+def _find_record_list(value: Any) -> list[dict[str, Any]]:
+    """Locate phenotype records without assuming one CIPHER envelope shape."""
+    candidates: list[list[dict[str, Any]]] = []
+
+    def visit(node: Any) -> None:
+        if isinstance(node, list):
+            dictionaries = [item for item in node if isinstance(item, dict)]
+            if dictionaries:
+                candidates.append(dictionaries)
+            for item in node:
+                visit(item)
+        elif isinstance(node, dict):
+            for child in node.values():
+                visit(child)
+
+    visit(value)
+    if not candidates:
+        return [value] if isinstance(value, dict) and _record_score(value) else []
+
+    return max(
+        candidates,
+        key=lambda records: (
+            sum(_record_score(record) for record in records),
+            len(records)
+        )
+    )
+
+
+def _find_total(value: Any, fallback: int) -> int:
+    total_aliases = {
+        "total", "totalcount", "totalresults", "resultcount", "count"
+    }
+
+    def visit(node: Any) -> int | None:
+        if isinstance(node, dict):
+            for key, child in node.items():
+                if _key_token(str(key)) in total_aliases:
+                    try:
+                        return int(child)
+                    except (TypeError, ValueError):
+                        pass
+            for child in node.values():
+                found = visit(child)
+                if found is not None:
+                    return found
+        return None
+
+    return visit(value) or fallback
+
+
+def normalize_phenotype_results(cipher_data: Any) -> dict[str, Any]:
+    """Create stable display fields while retaining every original record."""
+    source_records = _find_record_list(cipher_data)
+    records: list[dict[str, Any]] = []
+
+    for source in source_records:
+        records.append({
+            "phenotype_id": _field(
+                source, "id", "phenotype_id", "phenotypeid"
+            ),
+            "cipher_id": _field(
+                source, "uqid", "cipher_id", "cipherid", "unique_id"
+            ),
+            "name": _field(
+                source, "phenotype_full_name", "phenotypefullname",
+                "phenotype_name", "phenotypename", "name", "title"
+            ),
+            "status": _field(
+                source, "phenotype_status", "phenotypestatus", "status"
+            ),
+            "validated": _field(
+                source, "algorithm_validated", "algorithmvalidated",
+                "is_validated", "isvalidated", "validated"
+            ),
+            "algorithm_summary": _field(
+                source, "algorithm_desc", "algorithmdesc",
+                "algorithm_description", "algorithmdescription",
+                "algorithm_summary", "algorithmsummary"
+            ),
+            "population": _field(
+                source, "algorithm_population_desc", "algorithmpopulationdesc",
+                "population_description", "populationdescription", "population"
+            ),
+            "source_record": source,
+        })
+
+    return {
+        "type": "phenotype_search",
+        "total_results": _find_total(cipher_data, len(records)),
+        "records": records,
+    }
+
 def extract_phenotype_id(question: str) -> str | None:
     # Match a 32-character hex UQID
     match = re.search(r"\b[a-fA-F0-9]{32}\b", question)
@@ -644,5 +758,11 @@ def answer_question(
 
     return {
         "answer": answer,
-        "action": action
+        "action": action,
+        "structured": (
+            normalize_phenotype_results(cipher_data)
+            if action["action"] == "search_phenotypes"
+            else None
+        ),
+        "cipher_data": cipher_data
     }

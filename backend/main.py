@@ -2,6 +2,7 @@ import os
 import time
 from collections import defaultdict, deque
 from threading import Lock
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -54,6 +55,8 @@ class AskRequest(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     action: dict
+    structured: dict[str, Any] | None = None
+    cipher_data: Any = None
 
 
 def _check_rate_limit(ip: str) -> None:
@@ -120,7 +123,9 @@ def ask(
 
         return AskResponse(
             answer=result["answer"],
-            action=result["action"]
+            action=result["action"],
+            structured=result.get("structured"),
+            cipher_data=result.get("cipher_data")
         )
 
     except Exception as exc:
