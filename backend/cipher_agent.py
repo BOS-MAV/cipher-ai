@@ -31,6 +31,25 @@ def _record_score(record: dict[str, Any]) -> int:
 
 def _find_record_list(value: Any) -> list[dict[str, Any]]:
     """Locate phenotype records without assuming one CIPHER envelope shape."""
+    def named_results(node: Any) -> list[dict[str, Any]] | None:
+        if isinstance(node, dict):
+            for key, child in node.items():
+                if (
+                    _key_token(str(key)) == "results"
+                    and isinstance(child, list)
+                    and all(isinstance(item, dict) for item in child)
+                ):
+                    return child
+            for child in node.values():
+                found = named_results(child)
+                if found is not None:
+                    return found
+        return None
+
+    preferred = named_results(value)
+    if preferred is not None:
+        return preferred
+
     candidates: list[list[dict[str, Any]]] = []
 
     def visit(node: Any) -> None:
@@ -94,7 +113,8 @@ def normalize_phenotype_results(cipher_data: Any) -> dict[str, Any]:
             ),
             "name": _field(
                 source, "phenotype_full_name", "phenotypefullname",
-                "phenotype_name", "phenotypename", "name", "title"
+                "phenotype_name", "phenotypename", "full_name", "fullname",
+                "name", "title"
             ),
             "status": _field(
                 source, "phenotype_status", "phenotypestatus", "status"
@@ -110,7 +130,37 @@ def normalize_phenotype_results(cipher_data: Any) -> dict[str, Any]:
             ),
             "population": _field(
                 source, "algorithm_population_desc", "algorithmpopulationdesc",
+                "algorithm_population", "algorithmpopulation",
                 "population_description", "populationdescription", "population"
+            ),
+            "category": _field(source, "category"),
+            "data_classification": _field(
+                source, "data_classification", "dataclassification"
+            ),
+            "keywords": _field(source, "keywords"),
+            "algorithm_method": _field(
+                source, "algorithm_method", "algorithmmethod"
+            ),
+            "phenotype_role": _field(
+                source, "phenotype_role", "phenotyperole"
+            ),
+            "related_disease": _field(
+                source, "related_disease", "relateddisease"
+            ),
+            "data_sources": _field(source, "data_sources", "datasources"),
+            "role_in_analysis": _field(
+                source, "role_in_analysis", "roleinanalysis"
+            ),
+            "contacts": _field(source, "contacts"),
+            "group_authors": _field(
+                source, "group_authors", "groupauthors"
+            ),
+            "algorithm_created": _field(
+                source, "algorithm_created", "algorithmcreated"
+            ),
+            "created": _field(source, "created"),
+            "last_modified": _field(
+                source, "last_modified", "lastmodified"
             ),
             "source_record": source,
         })
