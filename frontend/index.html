@@ -44,7 +44,7 @@
     </footer>
   </main>
   <script src="config.js"></script>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
   <script>
     // Kept inline so GitHub Pages cannot serve an older response formatter.
     (() => {
@@ -52,7 +52,12 @@
       const copyButton = document.getElementById("copyButton");
       let plainAnswer = "";
 
-      const clean = (text) => text.replace(/\*\*/g, "").replace(/[“”]/g, '"').trim();
+      const clean = (text) => text
+        .replace(/\*\*/g, "")
+        .replace(/\bUQIDs\b/gi, "CIPHER IDs")
+        .replace(/\bUQID\b/gi, "CIPHER ID")
+        .replace(/[“”]/g, '"')
+        .trim();
       const displayLabel = (text) => {
         const label = clean(text);
         if (label.toUpperCase() === "UQID") return "CIPHER ID";
