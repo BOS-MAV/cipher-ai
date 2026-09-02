@@ -50,6 +50,10 @@ button:disabled { opacity: .5; cursor: wait; }
 .results-summary { font-weight: 700; color: #38515d; background: #edf7f9; border-radius: 10px; padding: 12px 14px; }
 .complete-record { margin: 8px 0 4px; border-top: 1px solid #e7eef1; padding: 12px 0 4px; }
 .complete-record pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; background: #f6f9fa; padding: 12px; border-radius: 8px; }
+.card-details { margin: 8px 0 4px; border-top: 1px solid #dce8ec; padding: 13px 0 4px; }
+.card-details > summary { color: #08738a; width: fit-content; }
+.card-details__content { margin-top: 10px; padding: 2px 14px 8px; background: #f7fafb; border: 1px solid #e3ecef; border-radius: 10px; }
+.card-details__content .complete-record { margin-top: 4px; }
 .details-button { margin: 12px 0 8px; background: #08738a; padding: 9px 14px; font-size: .9rem; }
 .details-button--header { margin: 0 0 0 auto; flex: 0 0 auto; color: #075f72; background: #fff; }
 .details-button--header:hover:not(:disabled) { color: #fff; background: #123d49; }
@@ -299,41 +303,50 @@ function renderStructuredPhenotypes(data) {
 
     const body = document.createElement("div");
     body.className = "phenotype-card__body";
-    addStructuredField(body, "Phenotype ID", record.phenotype_id);
     addStructuredField(body, "CIPHER ID", record.cipher_id);
-    addStructuredField(body, "Status", record.status);
-    addStructuredField(body, "Validated", record.validated);
-    addStructuredField(body, "Algorithm Summary", record.algorithm_summary);
-    addStructuredField(body, "Population", record.population);
-    addStructuredField(body, "Category", record.category);
-    addStructuredField(body, "Data Classification", record.data_classification);
-    addStructuredField(body, "Keywords", record.keywords);
-    addStructuredField(body, "Algorithm Method", record.algorithm_method);
-    addStructuredField(body, "Phenotype Role", record.phenotype_role);
-    addStructuredField(body, "Related Disease", record.related_disease);
-    addStructuredField(body, "Data Sources", record.data_sources);
-    addStructuredField(body, "Role in Analysis", record.role_in_analysis);
-    addStructuredField(body, "Contacts", record.contacts);
-    addStructuredField(body, "Group Authors", record.group_authors);
-    addStructuredField(body, "Algorithm Created", record.algorithm_created);
-    addStructuredField(body, "Created", record.created);
-    addStructuredField(body, "Last Modified", record.last_modified);
+    addStructuredField(body, "Phenotype ID", record.phenotype_id);
+    addStructuredField(body, "Author", record.group_authors);
+    addStructuredField(body, "Algorithm Component", record.algorithm_method);
+
+    const cardDetails = document.createElement("details");
+    cardDetails.className = "card-details";
+    const cardDetailsTitle = document.createElement("summary");
+    cardDetailsTitle.textContent = "View details";
+    const cardDetailsContent = document.createElement("div");
+    cardDetailsContent.className = "card-details__content";
+    addStructuredField(cardDetailsContent, "Status", record.status);
+    addStructuredField(cardDetailsContent, "Validated", record.validated);
+    addStructuredField(cardDetailsContent, "Algorithm Summary", record.algorithm_summary);
+    addStructuredField(cardDetailsContent, "Population", record.population);
+    addStructuredField(cardDetailsContent, "Category", record.category);
+    addStructuredField(cardDetailsContent, "Data Classification", record.data_classification);
+    addStructuredField(cardDetailsContent, "Keywords", record.keywords);
+    addStructuredField(cardDetailsContent, "Phenotype Role", record.phenotype_role);
+    addStructuredField(cardDetailsContent, "Related Disease", record.related_disease);
+    addStructuredField(cardDetailsContent, "Data Sources", record.data_sources);
+    addStructuredField(cardDetailsContent, "Role in Analysis", record.role_in_analysis);
+    addStructuredField(cardDetailsContent, "Contacts", record.contacts);
+    addStructuredField(cardDetailsContent, "Algorithm Created", record.algorithm_created);
+    addStructuredField(cardDetailsContent, "Created", record.created);
+    addStructuredField(cardDetailsContent, "Last Modified", record.last_modified);
 
     const complete = document.createElement("details");
     complete.className = "complete-record";
     const completeTitle = document.createElement("summary");
-    completeTitle.textContent = "View all fields returned by CIPHER";
+    completeTitle.textContent = "View complete raw CIPHER record";
     const raw = document.createElement("pre");
     raw.textContent = JSON.stringify(record.source_record, null, 2);
     complete.append(completeTitle, raw);
-    body.appendChild(complete);
+    cardDetailsContent.appendChild(complete);
+    cardDetails.append(cardDetailsTitle, cardDetailsContent);
+    body.appendChild(cardDetails);
 
     const identifier = record.phenotype_id ?? record.cipher_id;
     if (identifier !== null && identifier !== undefined && identifier !== "") {
       const detailButton = document.createElement("button");
       detailButton.type = "button";
       detailButton.className = "details-button";
-      detailButton.textContent = "View details";
+      detailButton.textContent = "Open complete phenotype";
       detailButton.setAttribute(
         "aria-label",
         `View details for ${record.name || `phenotype ${identifier}`}`
