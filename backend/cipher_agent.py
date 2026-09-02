@@ -171,6 +171,101 @@ def normalize_phenotype_results(cipher_data: Any) -> dict[str, Any]:
         "records": records,
     }
 
+
+def normalize_phenotype_detail(cipher_data: Any) -> dict[str, Any]:
+    """Normalize the nested phenotype-detail payload without losing raw data."""
+    if not isinstance(cipher_data, dict):
+        return {
+            "type": "phenotype_detail",
+            "record": {"source_record": cipher_data},
+        }
+
+    algorithm = cipher_data.get("algorithm") or {}
+    if not isinstance(algorithm, dict):
+        algorithm = {}
+
+    authors = []
+    for item in algorithm.get("authors") or []:
+        author = item.get("author") or {} if isinstance(item, dict) else {}
+        authors.append({
+            "name": author.get("name"),
+            "affiliation": author.get("affiliation"),
+        })
+
+    contacts = []
+    for item in algorithm.get("contacts") or []:
+        if not isinstance(item, dict):
+            continue
+        contacts.append({
+            "name": item.get("contactName"),
+            "emails": [
+                email.get("email") for email in item.get("emails") or []
+                if isinstance(email, dict) and email.get("email")
+            ],
+        })
+
+    associated_codes = []
+    for group in algorithm.get("assocCodes") or []:
+        if not isinstance(group, dict):
+            continue
+        associated_codes.append({
+            "code_type": group.get("codeType"),
+            "sub_code_type": group.get("subCodeType"),
+            "other_code_type": group.get("otherCodeType"),
+            "description": group.get("description"),
+            "requires_login": group.get("requiresLogin"),
+            "codes": [
+                code.get("code") for code in group.get("codes") or []
+                if isinstance(code, dict) and code.get("code") is not None
+            ],
+        })
+
+    return {
+        "type": "phenotype_detail",
+        "record": {
+            "phenotype_id": cipher_data.get("id"),
+            "cipher_id": cipher_data.get("uqid"),
+            "name": cipher_data.get("fullName"),
+            "version": cipher_data.get("versionInfo"),
+            "revision": cipher_data.get("revision"),
+            "category": cipher_data.get("phenotypeCategory"),
+            "description": cipher_data.get("description"),
+            "created": cipher_data.get("created"),
+            "last_modified": cipher_data.get("lastModified"),
+            "algorithm": {
+                "algorithm_id": algorithm.get("id"),
+                "description": algorithm.get("algorithmDesc"),
+                "population": algorithm.get("populationDesc"),
+                "validated": algorithm.get("validated"),
+                "validation_description": algorithm.get("validationDescription"),
+                "created": algorithm.get("algorithmCreated"),
+                "data_used_start": algorithm.get("dataUsedStart"),
+                "data_used_end": algorithm.get("dataUsedEnd"),
+                "authors": authors,
+                "contacts": contacts,
+                "associated_codes": associated_codes,
+                "methods_used": algorithm.get("methodsUsed") or [],
+                "related_diseases": algorithm.get("relatedDiseases") or [],
+                "validations": algorithm.get("validations") or [],
+                "contexts": algorithm.get("contextDevs") or [],
+            },
+            "sources": [
+                source for item in cipher_data.get("sources") or []
+                if isinstance(item, dict)
+                for source in (item.get("otherSource") or [])
+            ],
+            "keywords": [
+                item.get("keyword") for item in cipher_data.get("keywords") or []
+                if isinstance(item, dict) and item.get("keyword")
+            ],
+            "publications": cipher_data.get("publications") or [],
+            "data_classifications": cipher_data.get("dataClassifications") or [],
+            "roles_in_analysis": cipher_data.get("roleAnalyses") or [],
+            "tool_links": cipher_data.get("toolLinks") or [],
+            "source_record": cipher_data,
+        },
+    }
+
 def extract_phenotype_id(question: str) -> str | None:
     # Match a 32-character hex UQID
     match = re.search(r"\b[a-fA-F0-9]{32}\b", question)
@@ -812,6 +907,8 @@ def answer_question(
         "structured": (
             normalize_phenotype_results(cipher_data)
             if action["action"] == "search_phenotypes"
+            else normalize_phenotype_detail(cipher_data)
+            if action["action"] == "get_phenotype"
             else None
         ),
         "cipher_data": cipher_data
