@@ -5,7 +5,92 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="Natural-language search of CIPHER phenotypes and data dictionaries." />
   <title>CIPHER AI</title>
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <style>
+:root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17202a; background: #f3f7fa; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, #e7f3f7 0, transparent 34rem), #f3f7fa; }
+.shell { width: min(900px, calc(100% - 32px)); margin: 56px auto; }
+header { margin-bottom: 24px; }
+.eyebrow, .result-label { text-transform: uppercase; letter-spacing: .12em; font-size: .76rem; font-weight: 800; color: #08738a; }
+h1 { font-size: clamp(2.2rem, 6vw, 4rem); margin: 6px 0 8px; letter-spacing: -.04em; }
+.lede { font-size: 1.15rem; line-height: 1.6; max-width: 700px; margin: 0; color: #4b5563; }
+.card { background: rgba(255,255,255,.96); border: 1px solid #dce6eb; border-radius: 18px; padding: 24px; box-shadow: 0 12px 34px rgba(15,44,55,.07); margin-bottom: 20px; }
+label { display: block; font-weight: 700; margin-bottom: 8px; }
+textarea { width: 100%; resize: vertical; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; font: inherit; line-height: 1.5; }
+textarea:focus { outline: 3px solid rgba(59,130,246,.18); border-color: #3b82f6; }
+.actions { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+button { appearance: none; border: 0; border-radius: 10px; padding: 11px 18px; font: inherit; font-weight: 750; background: #08738a; color: white; cursor: pointer; transition: transform .15s ease, background .15s ease; }
+button:hover:not(:disabled) { background: #075f72; transform: translateY(-1px); }
+button:disabled { opacity: .5; cursor: wait; }
+#status { color: #526570; display: inline-flex; align-items: center; gap: 8px; }
+.spinner { width: 16px; height: 16px; border: 2px solid #b9d7de; border-top-color: #08738a; border-radius: 50%; animation: spin .75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.answer-card { border-top: 4px solid #0b819a; padding-top: 21px; }
+.answer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+.answer-card h2 { margin: 3px 0 0; font-size: 1.65rem; letter-spacing: -.02em; }
+.copy-button { background: #edf7f9; color: #08677b; padding: 8px 12px; font-size: .86rem; white-space: nowrap; }
+.copy-button:hover:not(:disabled) { background: #dceff3; }
+.answer-content { line-height: 1.7; color: #273640; }
+.answer-content p { margin: 0 0 14px; }
+.answer-content h3 { font-size: 1.08rem; color: #122f3a; margin: 24px 0 9px; }
+.answer-content ul, .answer-content ol { margin: 6px 0 18px; padding-left: 1.35rem; }
+.answer-content li { padding-left: .25rem; margin: 6px 0; }
+.answer-content code { font: .9em ui-monospace, SFMono-Regular, Consolas, monospace; color: #075f72; background: #edf7f9; border-radius: 5px; padding: 2px 5px; overflow-wrap: anywhere; }
+.phenotype-card { margin: 22px 0; border: 1px solid #d8e7eb; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 6px 18px rgba(20,72,84,.06); }
+.phenotype-card__header { display: flex; align-items: center; gap: 12px; padding: 15px 18px; color: #fff; background: linear-gradient(115deg, #075f72, #0b879f); }
+.phenotype-card__header h3 { color: #fff; font-size: 1.14rem; margin: 0; }
+.record-icon { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; font-weight: 850; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); }
+.phenotype-card__body { padding: 4px 18px 8px; }
+.result-field { display: grid; grid-template-columns: minmax(150px, 28%) 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid #e7eef1; }
+.result-field:last-child { border-bottom: 0; }
+.field-label { font-weight: 750; color: #38515d; }
+.field-value { min-width: 0; overflow-wrap: anywhere; }
+.result-note { margin: 0; padding: 10px 0 10px 20px; border-bottom: 1px solid #e7eef1; position: relative; }
+.result-note::before { content: "•"; position: absolute; left: 3px; color: #0b819a; font-weight: 800; }
+.results-summary { font-weight: 700; color: #38515d; background: #edf7f9; border-radius: 10px; padding: 12px 14px; }
+.complete-record { margin: 8px 0 4px; border-top: 1px solid #e7eef1; padding: 12px 0 4px; }
+.complete-record pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; background: #f6f9fa; padding: 12px; border-radius: 8px; }
+.details-button { margin: 12px 0 8px; background: #08738a; padding: 9px 14px; font-size: .9rem; }
+.details-button--header { margin: 0 0 0 auto; flex: 0 0 auto; color: #075f72; background: #fff; }
+.details-button--header:hover:not(:disabled) { color: #fff; background: #123d49; }
+.ai-explanation { margin-top: 24px; background: #f8fafb; border: 1px solid #dce6eb; border-radius: 12px; padding: 14px; }
+.ai-explanation__body { margin-top: 14px; }
+.detail-hero { display: flex; align-items: center; gap: 14px; color: #fff; background: linear-gradient(115deg, #075f72, #0b879f); border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+.detail-hero h3 { color: #fff; font-size: 1.35rem; margin: 0; }
+.detail-hero p { margin: 3px 0 0; color: rgba(255,255,255,.82); }
+.detail-hero__icon { background: rgba(255,255,255,.18); }
+.detail-section { background: #fff; border: 1px solid #dce6eb; border-radius: 12px; padding: 17px; margin: 16px 0; }
+.detail-section > h3 { color: #075f72; font-size: 1.05rem; margin: 0 0 10px; }
+.detail-section > p { margin: 8px 0; }
+.code-count { color: #526570; font-size: .9rem; font-weight: 700; }
+.code-grid { display: flex; flex-wrap: wrap; gap: 7px; max-height: 320px; overflow-y: auto; padding: 3px 1px; }
+.code-grid code { color: #075f72; background: #edf7f9; border: 1px solid #cfe5ea; border-radius: 7px; padding: 5px 8px; }
+.publication-list { margin-bottom: 0; }
+.publication-list a { color: #08738a; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.complete-detail { background: #fff; border: 1px solid #dce6eb; border-radius: 12px; padding: 14px; }
+details { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
+summary { cursor: pointer; font-weight: 650; }
+.tool-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tool-item { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; font: .82rem ui-monospace, SFMono-Regular, Consolas, monospace; color: #38515d; background: #eef4f6; border: 1px solid #dbe7eb; padding: 7px 10px; border-radius: 8px; }
+.error-card { border-top-color: #b42318; }
+.error-card .result-label { color: #b42318; }
+.error-message { color: #7a271a; background: #fff1f0; border: 1px solid #ffd4d1; border-radius: 10px; padding: 14px; }
+footer { color: #64748b; font-size: .9rem; padding: 4px 2px; }
+
+@media (max-width: 600px) {
+  .shell { margin: 30px auto; }
+  .card { padding: 19px; border-radius: 15px; }
+  .actions, .answer-heading { align-items: stretch; flex-direction: column; }
+  button { width: 100%; }
+  .copy-button { width: auto; align-self: flex-start; }
+  .details-button--header { width: auto; margin-left: auto; }
+  .result-field { grid-template-columns: 1fr; gap: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}
+  </style>
 </head>
 <body>
   <main class="shell">
@@ -44,127 +129,467 @@
     </footer>
   </main>
   <script src="config.js"></script>
-  <script src="cipher-ui-v1.js"></script>
   <script>
-    // Kept inline so GitHub Pages cannot serve an older response formatter.
-    (() => {
-      const answer = document.getElementById("answer");
-      const copyButton = document.getElementById("copyButton");
-      let plainAnswer = "";
+const button = document.getElementById("askButton");
+const questionEl = document.getElementById("question");
+const statusEl = document.getElementById("status");
+const answerCard = document.getElementById("answerCard");
+const answerEl = document.getElementById("answer");
+const toolsEl = document.getElementById("tools");
+const toolDetails = document.getElementById("toolDetails");
+const resultLabel = document.getElementById("resultLabel");
+const answerTitle = document.getElementById("answerTitle");
+const copyButton = document.getElementById("copyButton");
 
-      const clean = (text) => text
-        .replace(/\*\*/g, "")
-        .replace(/\bUQIDs\b/gi, "CIPHER IDs")
-        .replace(/\bUQID\b/gi, "CIPHER ID")
-        .replace(/[“”]/g, '"')
-        .trim();
-      const displayLabel = (text) => {
-        const label = clean(text);
-        if (label.toUpperCase() === "UQID") return "CIPHER ID";
-        if (label.toUpperCase() === "ID") return "Phenotype ID";
-        return label;
-      };
+let currentAnswer = "";
 
-      function formatCipherAnswer() {
-        if (!answer.textContent.includes("**")) return;
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-        plainAnswer = answer.innerText;
-        const lines = plainAnswer.split("\n").filter(line => line.trim());
-        const fragment = document.createDocumentFragment();
-        let cardBody = null;
-        let lastValue = null;
+function renderInline(value) {
+  return escapeHtml(value)
+    .replace(/\bUQIDs\b/gi, "CIPHER IDs")
+    .replace(/\bUQID\b/gi, "CIPHER ID")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
+}
 
-        for (const rawLine of lines) {
-          const line = rawLine.trim();
-          const record = line.match(/^\d+[.)]\s+\*\*(.+?)\*\*$/);
-          const field = line.match(/^[-*•]\s+(?:\*\*)?([^:*]+):(?:\*\*)?\s*(.*)$/);
-          const bullet = line.match(/^[-*•]\s+(.+)$/);
+function displayLabel(value) {
+  const label = String(value).trim().toUpperCase();
+  if (label === "UQID") return "CIPHER ID";
+  if (label === "ID") return "Phenotype ID";
+  return String(value).trim();
+}
 
-          if (record) {
-            const card = document.createElement("article");
-            card.className = "phenotype-card";
+function renderAnswer(value) {
+  const lines = String(value).replace(/\r\n/g, "\n").split("\n");
+  const html = [];
+  let listType = null;
+  let resultOpen = false;
 
-            const header = document.createElement("div");
-            header.className = "phenotype-card__header";
+  function closeList() {
+    if (listType) html.push(`</${listType}>`);
+    listType = null;
+  }
 
-            const icon = document.createElement("span");
-            icon.className = "record-icon";
-            icon.setAttribute("aria-hidden", "true");
-            icon.textContent = "C";
+  function closeResult() {
+    closeList();
+    if (resultOpen) html.push("</div></article>");
+    resultOpen = false;
+  }
 
-            const title = document.createElement("h3");
-            title.textContent = clean(record[1]);
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      closeList();
+      continue;
+    }
 
-            const detailButton = document.createElement("button");
-            detailButton.type = "button";
-            detailButton.className = "details-button details-button--header";
-            detailButton.textContent = "View details";
-            detailButton.setAttribute("aria-label", `View details for ${clean(record[1])}`);
-            detailButton.addEventListener("click", () => {
-              const rows = [...card.querySelectorAll(".result-field")];
-              const idRow = rows.find(row => {
-                const label = row.querySelector(".field-label")?.textContent?.trim();
-                return label === "Phenotype ID" || label === "CIPHER ID";
-              });
-              const identifier = idRow?.querySelector(".field-value")?.textContent?.trim();
-              if (!identifier) return;
-              document.getElementById("question").value = `Get phenotype ${identifier}`;
-              document.getElementById("askButton").click();
-            });
+    const resultHeading = line.match(/^\d+[.)]\s+\*\*(.+?)\*\*$/);
+    const resultField = line.match(/^[-*•]\s+\*\*([^*]+):\*\*\s*(.*)$/);
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    const bullet = line.match(/^[-*•]\s+(.+)$/);
+    const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+    const field = line.match(/^\*\*([^*]+):\*\*\s*(.*)$/) ||
+      line.match(/^([A-Za-z][A-Za-z0-9 /_-]{1,35}):\s+(.+)$/);
 
-            header.append(icon, title, detailButton);
-
-            cardBody = document.createElement("div");
-            cardBody.className = "phenotype-card__body";
-            card.append(header, cardBody);
-            fragment.append(card);
-            lastValue = null;
-          } else if (field && cardBody) {
-            const row = document.createElement("div");
-            row.className = "result-field";
-
-            const label = document.createElement("span");
-            label.className = "field-label";
-            label.textContent = displayLabel(field[1]);
-
-            const value = document.createElement("span");
-            value.className = "field-value";
-            value.textContent = clean(field[2]);
-            row.append(label, value);
-            cardBody.append(row);
-            lastValue = value;
-          } else if (bullet && cardBody) {
-            const item = document.createElement("p");
-            item.className = "result-note";
-            item.textContent = clean(bullet[1]);
-            cardBody.append(item);
-            lastValue = item;
-          } else if (/^\s+/.test(rawLine) && lastValue) {
-            lastValue.textContent += ` ${clean(line)}`;
-          } else {
-            cardBody = null;
-            lastValue = null;
-            const paragraph = document.createElement("p");
-            paragraph.textContent = clean(line);
-            fragment.append(paragraph);
-          }
-        }
-
-        answer.replaceChildren(fragment);
-        copyButton.hidden = false;
+    if (resultHeading) {
+      closeResult();
+      html.push(
+        `<article class="phenotype-card"><div class="phenotype-card__header">` +
+        `<span class="record-icon" aria-hidden="true">C</span>` +
+        `<h3>${renderInline(resultHeading[1])}</h3></div><div class="phenotype-card__body">`
+      );
+      resultOpen = true;
+    } else if (resultField && resultOpen) {
+      closeList();
+      html.push(
+        `<div class="result-field"><span class="field-label">${renderInline(displayLabel(resultField[1]))}</span>` +
+        `<span class="field-value">${renderInline(resultField[2])}</span></div>`
+      );
+    } else if (heading) {
+      closeList();
+      html.push(`<h3>${renderInline(heading[1])}</h3>`);
+    } else if (bullet || numbered) {
+      const desiredType = bullet ? "ul" : "ol";
+      if (listType !== desiredType) {
+        closeList();
+        html.push(`<${desiredType}>`);
+        listType = desiredType;
       }
+      html.push(`<li>${renderInline((bullet || numbered)[1])}</li>`);
+    } else if (field) {
+      closeList();
+      html.push(
+        `<div class="result-field"><span class="field-label">${renderInline(displayLabel(field[1]))}</span>` +
+        `<span class="field-value">${renderInline(field[2])}</span></div>`
+      );
+    } else {
+      closeList();
+      html.push(`<p>${renderInline(line)}</p>`);
+    }
+  }
 
-      new MutationObserver(formatCipherAnswer).observe(answer, {
-        childList: true,
-        subtree: true
-      });
+  closeResult();
+  return html.join("");
+}
 
-      copyButton.addEventListener("click", async () => {
-        await navigator.clipboard.writeText(plainAnswer);
-        copyButton.textContent = "Copied!";
-        setTimeout(() => { copyButton.textContent = "Copy answer"; }, 1600);
+function renderTools(tools) {
+  toolsEl.replaceChildren();
+  tools.forEach((tool) => {
+    const item = document.createElement("div");
+    item.className = "tool-item";
+    item.textContent = typeof tool === "string" ? tool : JSON.stringify(tool, null, 2);
+    toolsEl.appendChild(item);
+  });
+}
+
+function addStructuredField(container, label, value) {
+  const row = document.createElement("div");
+  row.className = "result-field";
+  const labelEl = document.createElement("span");
+  labelEl.className = "field-label";
+  labelEl.textContent = label;
+  const valueEl = document.createElement("span");
+  valueEl.className = "field-value";
+  if (value === null || value === undefined || value === "") {
+    valueEl.textContent = "Not provided by CIPHER";
+  } else if (Array.isArray(value)) {
+    valueEl.textContent = value.length ? value.join(", ") : "Not provided by CIPHER";
+  } else if (typeof value === "object") {
+    valueEl.textContent = JSON.stringify(value);
+  } else {
+    valueEl.textContent = String(value);
+  }
+  row.append(labelEl, valueEl);
+  container.appendChild(row);
+}
+
+function renderStructuredPhenotypes(data) {
+  const structured = data.structured;
+  answerEl.replaceChildren();
+
+  const summary = document.createElement("p");
+  const shown = structured.records.length;
+  const total = structured.total_results;
+  summary.className = "results-summary";
+  summary.textContent = total > shown
+    ? `Showing ${shown} of ${total} matching phenotypes.`
+    : `${shown} matching phenotype${shown === 1 ? "" : "s"}.`;
+  answerEl.appendChild(summary);
+
+  structured.records.forEach((record, index) => {
+    const card = document.createElement("article");
+    card.className = "phenotype-card";
+    const header = document.createElement("div");
+    header.className = "phenotype-card__header";
+    const icon = document.createElement("span");
+    icon.className = "record-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "C";
+    const title = document.createElement("h3");
+    title.textContent = record.name || `Phenotype ${index + 1}`;
+    header.append(icon, title);
+
+    const body = document.createElement("div");
+    body.className = "phenotype-card__body";
+    addStructuredField(body, "Phenotype ID", record.phenotype_id);
+    addStructuredField(body, "CIPHER ID", record.cipher_id);
+    addStructuredField(body, "Status", record.status);
+    addStructuredField(body, "Validated", record.validated);
+    addStructuredField(body, "Algorithm Summary", record.algorithm_summary);
+    addStructuredField(body, "Population", record.population);
+    addStructuredField(body, "Category", record.category);
+    addStructuredField(body, "Data Classification", record.data_classification);
+    addStructuredField(body, "Keywords", record.keywords);
+    addStructuredField(body, "Algorithm Method", record.algorithm_method);
+    addStructuredField(body, "Phenotype Role", record.phenotype_role);
+    addStructuredField(body, "Related Disease", record.related_disease);
+    addStructuredField(body, "Data Sources", record.data_sources);
+    addStructuredField(body, "Role in Analysis", record.role_in_analysis);
+    addStructuredField(body, "Contacts", record.contacts);
+    addStructuredField(body, "Group Authors", record.group_authors);
+    addStructuredField(body, "Algorithm Created", record.algorithm_created);
+    addStructuredField(body, "Created", record.created);
+    addStructuredField(body, "Last Modified", record.last_modified);
+
+    const complete = document.createElement("details");
+    complete.className = "complete-record";
+    const completeTitle = document.createElement("summary");
+    completeTitle.textContent = "View all fields returned by CIPHER";
+    const raw = document.createElement("pre");
+    raw.textContent = JSON.stringify(record.source_record, null, 2);
+    complete.append(completeTitle, raw);
+    body.appendChild(complete);
+
+    const identifier = record.phenotype_id ?? record.cipher_id;
+    if (identifier !== null && identifier !== undefined && identifier !== "") {
+      const detailButton = document.createElement("button");
+      detailButton.type = "button";
+      detailButton.className = "details-button";
+      detailButton.textContent = "View details";
+      detailButton.setAttribute(
+        "aria-label",
+        `View details for ${record.name || `phenotype ${identifier}`}`
+      );
+      detailButton.addEventListener("click", () => {
+        questionEl.value = `Get phenotype ${identifier}`;
+        askCipher();
       });
-    })();
+      body.appendChild(detailButton);
+    }
+
+    card.append(header, body);
+    answerEl.appendChild(card);
+  });
+
+  const explanation = document.createElement("details");
+  explanation.className = "ai-explanation";
+  const explanationTitle = document.createElement("summary");
+  explanationTitle.textContent = "View AI explanation";
+  const explanationBody = document.createElement("div");
+  explanationBody.className = "ai-explanation__body";
+  explanationBody.innerHTML = renderAnswer(data.answer || "");
+  explanation.append(explanationTitle, explanationBody);
+  answerEl.appendChild(explanation);
+}
+
+function createDetailSection(title) {
+  const section = document.createElement("section");
+  section.className = "detail-section";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  section.appendChild(heading);
+  return section;
+}
+
+function renderStructuredPhenotypeDetail(data) {
+  const record = data.structured.record;
+  const algorithm = record.algorithm || {};
+  answerEl.replaceChildren();
+
+  const hero = document.createElement("div");
+  hero.className = "detail-hero";
+  const icon = document.createElement("span");
+  icon.className = "record-icon detail-hero__icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "C";
+  const heroText = document.createElement("div");
+  const title = document.createElement("h3");
+  title.textContent = record.name || "Phenotype details";
+  const subtitle = document.createElement("p");
+  subtitle.textContent = `Phenotype ID ${record.phenotype_id ?? "not provided"}`;
+  heroText.append(title, subtitle);
+  hero.append(icon, heroText);
+  answerEl.appendChild(hero);
+
+  const overview = createDetailSection("Overview");
+  addStructuredField(overview, "Phenotype ID", record.phenotype_id);
+  addStructuredField(overview, "CIPHER ID", record.cipher_id);
+  addStructuredField(overview, "Version", record.version);
+  addStructuredField(overview, "Revision", record.revision);
+  addStructuredField(overview, "Category", record.category);
+  addStructuredField(overview, "Created", record.created);
+  addStructuredField(overview, "Last Modified", record.last_modified);
+  answerEl.appendChild(overview);
+
+  if (record.description) {
+    const description = createDetailSection("Description");
+    const text = document.createElement("p");
+    text.textContent = record.description;
+    description.appendChild(text);
+    answerEl.appendChild(description);
+  }
+
+  const algorithmSection = createDetailSection("Algorithm");
+  addStructuredField(algorithmSection, "Algorithm ID", algorithm.algorithm_id);
+  addStructuredField(algorithmSection, "Description", algorithm.description);
+  addStructuredField(algorithmSection, "Population", algorithm.population);
+  addStructuredField(algorithmSection, "Validated", algorithm.validated);
+  addStructuredField(algorithmSection, "Validation Description", algorithm.validation_description);
+  addStructuredField(algorithmSection, "Algorithm Created", algorithm.created);
+  addStructuredField(algorithmSection, "Data Used Start", algorithm.data_used_start);
+  addStructuredField(algorithmSection, "Data Used End", algorithm.data_used_end);
+  answerEl.appendChild(algorithmSection);
+
+  (algorithm.associated_codes || []).forEach((group, index) => {
+    const codeSection = createDetailSection(
+      `Associated Codes${algorithm.associated_codes.length > 1 ? ` ${index + 1}` : ""}`
+    );
+    addStructuredField(codeSection, "CIPHER Code Type ID", group.code_type);
+    addStructuredField(codeSection, "Subtype", group.sub_code_type);
+    addStructuredField(codeSection, "Description", group.description);
+    const count = document.createElement("p");
+    count.className = "code-count";
+    count.textContent = `${group.codes.length} code${group.codes.length === 1 ? "" : "s"}`;
+    const codes = document.createElement("div");
+    codes.className = "code-grid";
+    group.codes.forEach((code) => {
+      const chip = document.createElement("code");
+      chip.textContent = code;
+      codes.appendChild(chip);
+    });
+    codeSection.append(count, codes);
+    answerEl.appendChild(codeSection);
+  });
+
+  const people = createDetailSection("Authors and Contacts");
+  addStructuredField(
+    people,
+    "Authors",
+    (algorithm.authors || []).map(author =>
+      author.affiliation ? `${author.name} (${author.affiliation})` : author.name
+    ).filter(Boolean)
+  );
+  addStructuredField(
+    people,
+    "Contacts",
+    (algorithm.contacts || []).map(contact => {
+      const emails = (contact.emails || []).join(", ");
+      return emails ? `${contact.name}: ${emails}` : contact.name;
+    }).filter(Boolean)
+  );
+  answerEl.appendChild(people);
+
+  const metadata = createDetailSection("Sources and Classification");
+  addStructuredField(metadata, "Sources", record.sources);
+  addStructuredField(metadata, "Keywords", record.keywords);
+  addStructuredField(
+    metadata,
+    "Data Classification IDs",
+    (record.data_classifications || []).map(item => item.phenotypeClassId)
+  );
+  addStructuredField(
+    metadata,
+    "Role in Analysis IDs",
+    (record.roles_in_analysis || []).map(item => item.phenotypeRoleId)
+  );
+  answerEl.appendChild(metadata);
+
+  if ((record.publications || []).length) {
+    const publications = createDetailSection("Publications");
+    const list = document.createElement("ul");
+    list.className = "publication-list";
+    record.publications.forEach((publication) => {
+      const item = document.createElement("li");
+      if (/^https?:\/\//i.test(publication.link || "")) {
+        const link = document.createElement("a");
+        link.href = publication.link;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = publication.title || publication.link;
+        item.appendChild(link);
+      } else {
+        item.textContent = publication.title || "Untitled publication";
+      }
+      list.appendChild(item);
+    });
+    publications.appendChild(list);
+    answerEl.appendChild(publications);
+  }
+
+  const complete = document.createElement("details");
+  complete.className = "complete-record complete-detail";
+  const completeTitle = document.createElement("summary");
+  completeTitle.textContent = "View complete raw CIPHER record";
+  const raw = document.createElement("pre");
+  raw.textContent = JSON.stringify(record.source_record, null, 2);
+  complete.append(completeTitle, raw);
+  answerEl.appendChild(complete);
+
+  const explanation = document.createElement("details");
+  explanation.className = "ai-explanation";
+  const explanationTitle = document.createElement("summary");
+  explanationTitle.textContent = "View AI explanation";
+  const explanationBody = document.createElement("div");
+  explanationBody.className = "ai-explanation__body";
+  explanationBody.innerHTML = renderAnswer(data.answer || "");
+  explanation.append(explanationTitle, explanationBody);
+  answerEl.appendChild(explanation);
+}
+
+function showError(message) {
+  currentAnswer = "";
+  answerCard.classList.add("error-card");
+  resultLabel.textContent = "Request unsuccessful";
+  answerTitle.textContent = "We couldn't retrieve an answer";
+  answerEl.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+  toolsEl.replaceChildren();
+  toolDetails.hidden = true;
+  copyButton.hidden = true;
+  answerCard.hidden = false;
+}
+
+async function askCipher() {
+  const question = questionEl.value.trim();
+  if (!question) return;
+
+  button.disabled = true;
+  button.classList.add("is-loading");
+  button.textContent = "Searching…";
+  statusEl.innerHTML = '<span class="spinner" aria-hidden="true"></span> Searching CIPHER records';
+  answerCard.hidden = true;
+  answerCard.classList.remove("error-card");
+
+  try {
+    const response = await fetch(`${window.CIPHER_AI_API_BASE}/api/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+
+    let data = {};
+    try { data = await response.json(); } catch (_) {}
+    if (!response.ok) {
+      throw new Error(data.detail || `Request failed (${response.status})`);
+    }
+
+    currentAnswer = data.answer || "No answer returned.";
+    resultLabel.textContent = "CIPHER result";
+    answerTitle.textContent = "Answer";
+    if (data.structured?.type === "phenotype_search") {
+      renderStructuredPhenotypes(data);
+    } else if (data.structured?.type === "phenotype_detail") {
+      renderStructuredPhenotypeDetail(data);
+    } else {
+      answerEl.innerHTML = renderAnswer(currentAnswer);
+    }
+    const toolsUsed = data.tools_used || (data.action ? [data.action] : []);
+    renderTools(toolsUsed);
+    toolDetails.hidden = !toolsUsed.length;
+    copyButton.hidden = !currentAnswer;
+    answerCard.hidden = false;
+    statusEl.textContent = "";
+  } catch (error) {
+    showError(error.message);
+    statusEl.textContent = "";
+  } finally {
+    button.disabled = false;
+    button.classList.remove("is-loading");
+    button.textContent = "Ask CIPHER";
+  }
+}
+
+copyButton.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(currentAnswer);
+    copyButton.textContent = "Copied!";
+    setTimeout(() => { copyButton.textContent = "Copy answer"; }, 1600);
+  } catch (_) {
+    copyButton.textContent = "Unable to copy";
+  }
+});
+
+button.addEventListener("click", askCipher);
+questionEl.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") askCipher();
+});
   </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "72375709b6234bf49af35603878289f1"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
