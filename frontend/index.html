@@ -44,7 +44,7 @@
     </footer>
   </main>
   <script src="config.js"></script>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
   <script>
     // Kept inline so GitHub Pages cannot serve an older response formatter.
     (() => {
@@ -89,7 +89,25 @@
 
             const title = document.createElement("h3");
             title.textContent = clean(record[1]);
-            header.append(icon, title);
+
+            const detailButton = document.createElement("button");
+            detailButton.type = "button";
+            detailButton.className = "details-button details-button--header";
+            detailButton.textContent = "View details";
+            detailButton.setAttribute("aria-label", `View details for ${clean(record[1])}`);
+            detailButton.addEventListener("click", () => {
+              const rows = [...card.querySelectorAll(".result-field")];
+              const idRow = rows.find(row => {
+                const label = row.querySelector(".field-label")?.textContent?.trim();
+                return label === "Phenotype ID" || label === "CIPHER ID";
+              });
+              const identifier = idRow?.querySelector(".field-value")?.textContent?.trim();
+              if (!identifier) return;
+              document.getElementById("question").value = `Get phenotype ${identifier}`;
+              document.getElementById("askButton").click();
+            });
+
+            header.append(icon, title, detailButton);
 
             cardBody = document.createElement("div");
             cardBody.className = "phenotype-card__body";
