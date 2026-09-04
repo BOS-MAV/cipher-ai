@@ -53,6 +53,10 @@ button:disabled { opacity: .5; cursor: wait; }
 .result-note { margin: 0; padding: 10px 0 10px 20px; border-bottom: 1px solid #e7eef1; position: relative; }
 .result-note::before { content: "•"; position: absolute; left: 3px; color: #0b819a; font-weight: 800; }
 .results-summary { font-weight: 700; color: #38515d; background: #edf7f9; border-radius: 10px; padding: 12px 14px; }
+.phenotype-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.phenotype-grid .phenotype-card { margin: 0; }
+.phenotype-grid .compact-fields { column-gap: 10px; }
+.phenotype-grid .compact-fields .result-field:first-child .field-value { font-size: .76rem; }
 .complete-record { margin: 8px 0 4px; border-top: 1px solid #e7eef1; padding: 12px 0 4px; }
 .complete-record pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; background: #f6f9fa; padding: 12px; border-radius: 8px; }
 .card-details { margin: 2px 9px 1px 0; border-top: 0; padding: 3px 0; }
@@ -97,6 +101,7 @@ footer { color: #64748b; font-size: .9rem; padding: 4px 2px; }
   .details-button--header { width: auto; margin-left: auto; }
   .result-field { grid-template-columns: 1fr; gap: 2px; }
   .compact-fields { grid-template-columns: 1fr; }
+  .phenotype-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -296,6 +301,10 @@ function renderStructuredPhenotypes(data) {
     : `${shown} matching phenotype${shown === 1 ? "" : "s"}.`;
   answerEl.appendChild(summary);
 
+  const grid = document.createElement("div");
+  grid.className = "phenotype-grid";
+  answerEl.appendChild(grid);
+
   structured.records.forEach((record, index) => {
     const card = document.createElement("article");
     card.className = "phenotype-card";
@@ -370,7 +379,7 @@ function renderStructuredPhenotypes(data) {
     }
 
     card.append(header, body);
-    answerEl.appendChild(card);
+    grid.appendChild(card);
   });
 
   const explanation = document.createElement("details");
