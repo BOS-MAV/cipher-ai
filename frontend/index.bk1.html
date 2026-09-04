@@ -36,13 +36,11 @@ button:disabled { opacity: .5; cursor: wait; }
 .answer-content ul, .answer-content ol { margin: 6px 0 18px; padding-left: 1.35rem; }
 .answer-content li { padding-left: .25rem; margin: 6px 0; }
 .answer-content code { font: .9em ui-monospace, SFMono-Regular, Consolas, monospace; color: #075f72; background: #edf7f9; border-radius: 5px; padding: 2px 5px; overflow-wrap: anywhere; }
-.phenotype-card { margin: 12px 0; border: 1px solid #d8e7eb; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 12px rgba(20,72,84,.05); }
-.phenotype-card__header { display: flex; align-items: center; gap: 9px; padding: 10px 14px; color: #fff; background: linear-gradient(115deg, #075f72, #0b879f); }
-.phenotype-card__header h3 { color: #fff; font-size: 1.05rem; margin: 0; }
-.record-icon { display: grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; font-size: .88rem; font-weight: 850; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); }
-.phenotype-card__body { padding: 2px 14px 6px; }
-.compact-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 22px; }
-.compact-fields .result-field { grid-template-columns: minmax(118px, 42%) 1fr; gap: 8px; padding: 6px 0; }
+.phenotype-card { margin: 22px 0; border: 1px solid #d8e7eb; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 6px 18px rgba(20,72,84,.06); }
+.phenotype-card__header { display: flex; align-items: center; gap: 12px; padding: 15px 18px; color: #fff; background: linear-gradient(115deg, #075f72, #0b879f); }
+.phenotype-card__header h3 { color: #fff; font-size: 1.14rem; margin: 0; }
+.record-icon { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; font-weight: 850; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); }
+.phenotype-card__body { padding: 4px 18px 8px; }
 .result-field { display: grid; grid-template-columns: minmax(150px, 28%) 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid #e7eef1; }
 .result-field:last-child { border-bottom: 0; }
 .field-label { font-weight: 750; color: #38515d; }
@@ -52,11 +50,11 @@ button:disabled { opacity: .5; cursor: wait; }
 .results-summary { font-weight: 700; color: #38515d; background: #edf7f9; border-radius: 10px; padding: 12px 14px; }
 .complete-record { margin: 8px 0 4px; border-top: 1px solid #e7eef1; padding: 12px 0 4px; }
 .complete-record pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; background: #f6f9fa; padding: 12px; border-radius: 8px; }
-.card-details { margin: 3px 0 2px; border-top: 1px solid #dce8ec; padding: 8px 0 2px; }
+.card-details { margin: 8px 0 4px; border-top: 1px solid #dce8ec; padding: 13px 0 4px; }
 .card-details > summary { color: #08738a; width: fit-content; }
 .card-details__content { margin-top: 10px; padding: 2px 14px 8px; background: #f7fafb; border: 1px solid #e3ecef; border-radius: 10px; }
 .card-details__content .complete-record { margin-top: 4px; }
-.details-button { margin: 7px 0 3px; background: #08738a; padding: 7px 12px; font-size: .86rem; }
+.details-button { margin: 12px 0 8px; background: #08738a; padding: 9px 14px; font-size: .9rem; }
 .details-button--header { margin: 0 0 0 auto; flex: 0 0 auto; color: #075f72; background: #fff; }
 .details-button--header:hover:not(:disabled) { color: #fff; background: #123d49; }
 .ai-explanation { margin-top: 24px; background: #f8fafb; border: 1px solid #dce6eb; border-radius: 12px; padding: 14px; }
@@ -91,7 +89,6 @@ footer { color: #64748b; font-size: .9rem; padding: 4px 2px; }
   .copy-button { width: auto; align-self: flex-start; }
   .details-button--header { width: auto; margin-left: auto; }
   .result-field { grid-template-columns: 1fr; gap: 2px; }
-  .compact-fields { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -306,13 +303,10 @@ function renderStructuredPhenotypes(data) {
 
     const body = document.createElement("div");
     body.className = "phenotype-card__body";
-    const compactFields = document.createElement("div");
-    compactFields.className = "compact-fields";
-    addStructuredField(compactFields, "CIPHER ID", record.cipher_id);
-    addStructuredField(compactFields, "Phenotype ID", record.phenotype_id);
-    addStructuredField(compactFields, "Author", record.group_authors);
-    addStructuredField(compactFields, "Algorithm Component", record.algorithm_method);
-    body.appendChild(compactFields);
+    addStructuredField(body, "CIPHER ID", record.cipher_id);
+    addStructuredField(body, "Phenotype ID", record.phenotype_id);
+    addStructuredField(body, "Author", record.group_authors);
+    addStructuredField(body, "Algorithm Component", record.algorithm_method);
 
     const cardDetails = document.createElement("details");
     cardDetails.className = "card-details";
